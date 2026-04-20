@@ -9,6 +9,12 @@
 #include <QDir>
 #include <QGuiApplication>
 
+#ifdef Q_OS_WIN32
+#include <Windows.h>
+#include <Imm.h>
+#pragma comment(lib, "imm32.lib")
+#endif
+
 SdlInputHandler::SdlInputHandler(StreamingPreferences& prefs, int streamWidth, int streamHeight)
     : m_MultiController(prefs.multiController),
       m_GamepadMouse(prefs.gamepadMouse),
@@ -250,6 +256,16 @@ SdlInputHandler::~SdlInputHandler()
 void SdlInputHandler::setWindow(SDL_Window *window)
 {
     m_Window = window;
+
+#ifdef Q_OS_WIN32
+    // Disable IME immediately after window is set, since sdl2-compat
+    // enables text input on window creation (FinishWindowCreation).
+    SDL_SysWMinfo info;
+    SDL_VERSION(&info.version);
+    if (SDL_GetWindowWMInfo(m_Window, &info) && info.subsystem == SDL_SYSWM_WINDOWS) {
+        ImmAssociateContext(info.info.win.window, NULL);
+    }
+#endif
 }
 
 void SdlInputHandler::raiseAllKeys()
@@ -306,6 +322,18 @@ void SdlInputHandler::notifyFocusLost()
 
 void SdlInputHandler::notifyFocusGained()
 {
+#ifdef Q_OS_WIN32
+    // Directly disable IME on the SDL window via Windows IMM API.
+    // SDL_StopTextInput() through sdl2-compat is unreliable because:
+    // 1. sdl2-compat re-enables text input on window creation by default
+    // 2. Windows may re-associate IME context on WM_SETFOCUS before SDL processes the event
+    // Using ImmAssociateContext(hwnd, NULL) is a reliable, HWND-level IME disable.
+    SDL_SysWMinfo info;
+    SDL_VERSION(&info.version);
+    if (SDL_GetWindowWMInfo(m_Window, &info) && info.subsystem == SDL_SYSWM_WINDOWS) {
+        ImmAssociateContext(info.info.win.window, NULL);
+    }
+#endif
 }
 
 bool SdlInputHandler::isCaptureActive()
