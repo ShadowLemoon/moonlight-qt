@@ -1,6 +1,5 @@
 #include <Limelight.h>
 #include "SDL_compat.h"
-#include <SDL_syswm.h>
 #include "streaming/session.h"
 #include "settings/mappingmanager.h"
 #include "path.h"
@@ -9,6 +8,9 @@
 #include <QtGlobal>
 #include <QDir>
 #include <QGuiApplication>
+
+// Include SDL_syswm.h after Qt headers to avoid X11 macro conflicts on Linux
+#include <SDL_syswm.h>
 
 #ifdef Q_OS_WIN32
 #include <Windows.h>
