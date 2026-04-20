@@ -1,5 +1,6 @@
 #include <Limelight.h>
 #include "SDL_compat.h"
+#include <SDL_syswm.h>
 #include "streaming/session.h"
 #include "settings/mappingmanager.h"
 #include "path.h"
