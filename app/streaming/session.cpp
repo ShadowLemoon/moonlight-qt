@@ -2211,6 +2211,12 @@ void Session::exec()
     std::string windowName = QString(m_Computer->name + " - Moonlight").toStdString();
 #endif
 
+    // Stop text input BEFORE creating the window. sdl2-compat enables text
+    // events by default during video init, and FinishWindowCreation() will
+    // activate IME on any new window if SDL_IsTextInputActive() returns true.
+    // By stopping text input first, the streaming window won't have IME enabled.
+    SDL_StopTextInput();
+
     m_Window = SDL_CreateWindow(windowName.c_str(),
                                 x,
                                 y,
@@ -2288,12 +2294,6 @@ void Session::exec()
         // X11/XWayland: Capture after decoder creation
         needsPostDecoderCreationCapture = true;
     }
-
-    // Stop text input. SDL enables it by default
-    // when we initialize the video subsystem, but this
-    // causes an IME popup when certain keys are held down
-    // on macOS.
-    SDL_StopTextInput();
 
     // Disable the screen saver if requested
     if (m_Preferences->keepAwake) {
